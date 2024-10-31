@@ -8,8 +8,8 @@ import {
 } from "./breadcrumb";
 import { Toaster } from "./toaster";
 import { Button } from "./button";
-import FavIcon from "../../assets/favorite.svg";
-import Wishlist from "@/pages/Wishlist";
+import { ActivityLogIcon } from "@radix-ui/react-icons";
+import LastActivity from "@/pages/LastActivity";
 
 interface LayoutProps {
    cta?: boolean;
@@ -26,7 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ submenus, children }) => {
                <BreadcrumbList>
                   <BreadcrumbItem>
                      <BreadcrumbLink href="/">
-                        <p className="font-bold text-2xl text-black">Beauty Box</p>
+                        <p className="font-bold text-2xl text-black">Breaking News</p>
                      </BreadcrumbLink>
                   </BreadcrumbItem>
                   {submenus?.map((menu, index) => (
@@ -46,12 +46,12 @@ const Layout: React.FC<LayoutProps> = ({ submenus, children }) => {
                   ))}
                </BreadcrumbList>
             </Breadcrumb>
-            <Wishlist>
+            <LastActivity>
                <Button>
-                  <img src={FavIcon} alt="" className="w-4" />{" "}
-                  <span className="hidden md:block">Wishlist</span>
+                  <ActivityLogIcon />
+                  <span className="hidden md:block">Last Activity</span>
                </Button>
-            </Wishlist>
+            </LastActivity>
          </div>
          <div className="px-8">
             <div className="pb-4 pt-32">{children}</div>
