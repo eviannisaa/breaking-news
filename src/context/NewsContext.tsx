@@ -10,26 +10,26 @@ interface NewItem {
    title: string;
    url: string;
    urlToImage: string;
-   source: SourceData;
+   source: SourceItem;
 }
 
-interface SourceData {
+interface SourceItem {
    id: string;
    name: string;
 }
 
 interface NewsContextProps {
    news: NewItem[];
-   filteredNews: NewItem[];
-   bookMark: (newItem: NewItem) => Promise<void>;
    isLoading: boolean;
-   searchNews: (q: string) => void;
-   bookmarkedIds: string[];
-   setBookmarkedIds: (ids: any) => void;
-   toggleBookmark: (item: any) => void;
+   searchQuery: string;
+   setSearchQuery: (e: any) => void;
+   isSearching: boolean;
+   handleSearch: (q: string) => void;
+   handleReset: () => void;
    formatDate: (dateString: string) => React.ReactNode;
-   bookmarkedNews: string[];
-   setBookmarkedNews: any;
+   activity: NewItem[];
+   setActivity: (item: []) => void;
+   toggleBookmark: (item: NewItem) => void;
    removeItem: (title: string) => void;
    clearAll: () => void;
 }
@@ -41,19 +41,11 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
    const { toast } = useToast();
    const [news, setNews] = useState<NewItem[]>([]);
-   const [filteredNews, setFilteredNews] = useState<NewItem[]>([]);
+   const [originalNews, setOriginalNews] = useState<NewItem[]>([]);
    const [isLoading, setIsLoading] = useState(true);
-   const [, setIsBookmarkedNews] = useState<NewItem[]>([]);
-   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
-   const [bookmarkedNews, setBookmarkedNews] = useState<any[]>([]);
-   // const bookmarkedNews = JSON.parse(localStorage.getItem("bookmarkedIds") || "[]")
-
-   useEffect(() => {
-      const storedBookmarks = localStorage.getItem("bookmarkedIds");
-      if (storedBookmarks) {
-         setBookmarkedIds(JSON.parse(storedBookmarks));
-      }
-   }, []);
+   const [searchQuery, setSearchQuery] = useState("");
+   const [isSearching, setIsSearching] = useState(false);
+   const [activity, setActivity] = useState<NewItem[]>([]);
 
    useEffect(() => {
       const fetchNews = async () => {
@@ -63,26 +55,20 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
                "https://newsapi.org/v2/top-headlines?sources=techcrunch&apiKey=b6e6f159ce0b457e971b90aaf3525f9b",
             );
             setNews(response.data.articles);
-            setFilteredNews(response.data.articles);
+            setOriginalNews(response.data.articles);
          } catch (error) {
             console.error("error fetching news", error);
          } finally {
             setIsLoading(false);
          }
       };
-
       fetchNews();
    }, []);
 
-   const searchNews = (q: string) => {
+   const handleSearch = (q: string) => {
+      setIsSearching(true);
       const query = q.trim().toLowerCase();
       const matchQuery = (str: string) => str.toLowerCase().includes(query);
-
-      if (!query) {
-         setFilteredNews(news);
-         return;
-      }
-
       const filteredNews = news.filter((newItem) => {
          return (
             matchQuery(newItem.author) ||
@@ -93,64 +79,59 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
             matchQuery(newItem.url)
          );
       });
-
-      setFilteredNews(filteredNews);
+      setNews(filteredNews);
+      setTimeout(() => {
+         setIsSearching(false);
+      }, 500);
    };
 
-   const bookMark = async (newItem: NewItem) => {
-      setIsBookmarkedNews((prev) => [...prev, newItem]);
+   const handleReset = () => {
+      setSearchQuery("");
+      setNews(originalNews);
    };
 
-   const toggleBookmark = async (item: any) => {
-      const storedIds = JSON.parse(localStorage.getItem("bookmarkedIds") || "[]");
-      // find item
-      const itemIndex = storedIds.findIndex(
+   const toggleBookmark = async (item: NewItem) => {
+      const store = JSON.parse(localStorage.getItem("lastActivity") || "[]");
+      const findItem = store.findIndex(
          (title: any) => title.title === item.title,
       );
 
-      if (itemIndex !== -1) {
-         // if item exists, delete from activity
-         const updatedIds = storedIds.filter(
-            (_: any, index: any) => index !== itemIndex,
+      if (findItem !== -1) {
+         const updatedItem = store.filter(
+            (_: any, index: any) => index !== findItem,
          );
-         localStorage.setItem("bookmarkedIds", JSON.stringify(updatedIds));
-         setIsBookmarkedNews(updatedIds);
+         localStorage.setItem("lastActivity", JSON.stringify(updatedItem));
+         setActivity(updatedItem);
+      } else {
+         const updatedItem = [
+            ...store.filter((_: any, index: any) => index !== findItem),
+            {
+               url: item.url,
+               timestamp: Date.now(),
+               image: item.urlToImage,
+               title: item.title,
+            },
+         ];
+
+         localStorage.setItem("lastActivity", JSON.stringify(updatedItem));
+         setActivity(updatedItem);
       }
-
-      // Add the item back with the latest timestamp.
-      const updatedIds = [
-         // make sure old item not exists
-         ...storedIds.filter((_: any, index: any) => index !== itemIndex),
-         {
-            url: item.url,
-            timestamp: Date.now(),
-            image: item.urlToImage,
-            title: item.title,
-         },
-      ];
-
-      localStorage.setItem("bookmarkedIds", JSON.stringify(updatedIds));
-      setIsBookmarkedNews(updatedIds);
    };
 
    const removeItem = (title: string) => {
-      const updatedNews = bookmarkedNews.filter(
-         (item: any) => item.title !== title,
-      );
-      setBookmarkedNews(updatedNews);
-      localStorage.setItem("bookmarkedIds", JSON.stringify(updatedNews));
-
+      const updatedItem = activity.filter((item: any) => item.title !== title);
+      setActivity(updatedItem);
+      localStorage.setItem("lastActivity", JSON.stringify(updatedItem));
       toast({ description: "The news item has been successfully deleted." });
    };
 
    const clearAll = () => {
-      setBookmarkedNews([]);
-      localStorage.removeItem("bookmarkedIds");
-
+      // setActivity([]);
+      localStorage.removeItem("lastActivity");
       toast({ description: "All news items have been successfully deleted." });
    };
 
-   const formatDate = (dateString: string): string => {
+   const formatDate = (dateString: string) => {
       const date = new Date(dateString);
 
       const options: Intl.DateTimeFormatOptions = {
@@ -161,10 +142,8 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       const formattedDate = date.toLocaleDateString("id-ID", options);
-
       const hours = date.getHours().toString().padStart(2, "0");
       const minutes = date.getMinutes().toString().padStart(2, "0");
-
       return `${formattedDate.replace(",", "")} ${hours}.${minutes}`;
    };
 
@@ -172,16 +151,16 @@ export const NewsProvider: React.FC<{ children: React.ReactNode }> = ({
       <NewsContext.Provider
          value={{
             news,
-            filteredNews,
-            bookMark,
             isLoading,
-            searchNews,
-            bookmarkedIds,
-            setBookmarkedIds,
-            toggleBookmark,
+            searchQuery,
+            setSearchQuery,
+            isSearching,
+            handleSearch,
+            handleReset,
             formatDate,
-            bookmarkedNews,
-            setBookmarkedNews,
+            activity,
+            setActivity,
+            toggleBookmark,
             removeItem,
             clearAll,
          }}

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import Layout from "@/components/ui/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,30 +8,16 @@ import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
 
 const Home = () => {
    const {
-      filteredNews,
+      news,
       isLoading,
-      searchNews,
-      setBookmarkedIds,
+      searchQuery,
+      setSearchQuery,
+      isSearching,
+      handleSearch,
+      handleReset,
       toggleBookmark,
       formatDate,
    } = useNews();
-   const [searchQuery, setSearchQuery] = useState("");
-   const [isSearching, setIsSearching] = useState(false);
-
-   useEffect(() => {
-      const storedBookmarks = localStorage.getItem("bookmarkedIds");
-      if (storedBookmarks) {
-         setBookmarkedIds(JSON.parse(storedBookmarks));
-      }
-   }, []);
-
-   const handleSearch = () => {
-      setIsSearching(true);
-      searchNews(searchQuery);
-      setTimeout(() => {
-         setIsSearching(false);
-      }, 500);
-   };
 
    if (isLoading) {
       return <HomeSkeleton />;
@@ -46,8 +31,10 @@ const Home = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
+                  handleReset={handleReset}
+                  reset={searchQuery ? true : false}
                />
-               <Button onClick={handleSearch}>
+               <Button onClick={() => handleSearch(searchQuery)}>
                   <MagnifyingGlassIcon />
                </Button>
             </div>
@@ -57,9 +44,9 @@ const Home = () => {
                   <div className="border rounded-lg w-full h-60 flex justify-center items-center">
                      <p className="text-center text-sm">Loading...</p>
                   </div>
-               ) : filteredNews.length > 0 ? (
+               ) : news.length > 0 ? (
                   <div className="flex flex-wrap gap-y-3 justify-between">
-                     {filteredNews.slice(0, 6).map((item, index) => {
+                     {news.slice(0, 6).map((item, index) => {
                         return (
                            <div
                               key={index}

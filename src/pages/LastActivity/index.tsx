@@ -16,15 +16,15 @@ interface LastActivityProps {
 }
 
 const LastActivity: React.FC<LastActivityProps> = ({ children }) => {
-   const { bookmarkedNews, setBookmarkedNews, removeItem, clearAll } = useNews();
+   const { activity, setActivity, removeItem, clearAll } = useNews();
    const [showSelectRemove, setShowSelectRemove] = useState(false);
 
    useEffect(() => {
       const storedNews = JSON.parse(
-         localStorage.getItem("bookmarkedIds") || "[]",
+         localStorage.getItem("lastActivity") || "[]",
       );
-      setBookmarkedNews(storedNews);
-   }, [bookmarkedNews]);
+      setActivity(storedNews);
+   }, [activity]);
 
    return (
       <div>
@@ -35,7 +35,7 @@ const LastActivity: React.FC<LastActivityProps> = ({ children }) => {
                   <SheetTitle>The Last News Read</SheetTitle>
                </SheetHeader>
 
-               {bookmarkedNews.length > 0 && (
+               {activity.length > 0 && (
                   <div className="flex gap-4 justify-end my-6">
                      <Button size="sm" onClick={clearAll}>
                         Clear All
@@ -52,9 +52,9 @@ const LastActivity: React.FC<LastActivityProps> = ({ children }) => {
                   </div>
                )}
 
-               {bookmarkedNews.length > 0 ? (
+               {activity.length > 0 ? (
                   <div className="grid grid-cols-1 gap-3 mt-6 max-h-[82%] overflow-y-auto">
-                     {bookmarkedNews
+                     {activity
                         .sort((a: any, b: any) => b.timestamp - a.timestamp)
                         .map((item: any, i: any) => (
                            <div
